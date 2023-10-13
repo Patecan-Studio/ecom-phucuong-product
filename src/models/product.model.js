@@ -28,6 +28,7 @@ const productSchema = new Schema({
         type: String,
         required: true
     },
+    product_banner_image: {type: String, default: "https://via.placeholder.com/350"},
     product_images: [
         {type: String, default: "https://via.placeholder.com/150"}
     ],
