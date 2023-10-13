@@ -1,12 +1,7 @@
-
-
-
+'use strict';
 const CategoryRepository = require('../../repositories/category.repository');
 const {BadRequestError, NotFoundError} = require("../../common/response/error.response");
-const BrandRepository = require("../../repositories/brand.repository");
 const {removeInvalidValue, updateNestedObjectParser} = require("../../utils");
-const {repoUpdateProductById} = require("../../repositories/product.repository");
-const {product} = require("../../models/product.model");
 
 
 

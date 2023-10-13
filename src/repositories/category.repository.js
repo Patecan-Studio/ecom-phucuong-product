@@ -3,7 +3,7 @@ const {populate} = require("dotenv");
 const {Types} = require("mongoose");
 const {convertSelectToObject, convertUnSelectToObject} = require("../utils");
 const {BadRequestError} = require("../common/response/error.response");
-const {product} = require("../models/product.model");
+
 
 
 class CategoryRepository {

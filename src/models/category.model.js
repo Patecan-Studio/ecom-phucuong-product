@@ -1,10 +1,6 @@
 'use strict'
 
 const {model, Schema, Types} = require('mongoose')
-const slugify = require("slugify");
-const BrandService = require("../services/brand/brand.service");
-const CategoryService = require("../services/category/category.service");
-const {product} = require("./product.model");
 
 const DOCUMENT_NAME = 'Category'
 const COLLECTION_NAME = 'Categories'
@@ -44,21 +40,5 @@ const categorySchema = new Schema({
     collection: COLLECTION_NAME
 });
 
-// categorySchema.pre('save', async function (next) {
-//     for (let i = 0; i < this.category_products.length; i++) {
-//         const productId = this.product_categories[i];
-//
-//
-//         product.updateMany(
-//             { 'product_categories._id': this._id },
-//             {
-//                 $set: {
-//                     'product_categories.$.categoryName': this.category_name,
-//                     'product_categories.$.categoryLogoUrl': this.category_logoUrl,
-//                 },
-//             });
-//     }
-//     next();
-// });
 
 module.exports = model(DOCUMENT_NAME, categorySchema)
