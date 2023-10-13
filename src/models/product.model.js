@@ -12,6 +12,12 @@ const DOCUMENT_NAME = 'Product'
 const COLLECTION_NAME = 'Products'
 
 const productSchema = new Schema({
+    product_code: {
+        type: String,
+        trim: true,
+        required: true,
+        unique: true
+    },
     product_name: {
         type: String,
         trim: true,
@@ -70,6 +76,22 @@ const productSchema = new Schema({
     product_variations: {
         type: Array,
         default: []
+    },
+    product_height: {
+        type: String,
+    },
+    product_width: {
+        type: String,
+    },
+    product_length: {
+        type: String,
+    },
+    product_size_unit: {
+           type: ['cm', 'm', 'mm', 'inch'],
+    },
+    product_weight: {
+        value: {type: String},
+        unit: ['kg', 'g', 'mg'],
     },
     product_attributes: {type: Schema.Types.Mixed, required: true},
     product_isActive: {type: Boolean, default: true},
