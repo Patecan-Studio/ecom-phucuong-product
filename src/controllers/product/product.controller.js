@@ -53,6 +53,17 @@ class ProductController {
 
     }
 
+    deleteProduct = async (req, res, next) => {
+
+        const result =await ProductServiceV2.deleteProduct(req.params.productId);
+
+        new SuccessResponse({
+            message: 'Delete product successfully',
+            metadata: result
+        }).send(res);
+
+    }
+
     // QUERY //
     /**
      * @desc Get all draft product of a shop
@@ -92,7 +103,7 @@ class ProductController {
     }
 
     findOneProduct = async (req, res, next) => {
-        const result =await ProductServiceV2.findOneProduct(req.params.product_id);
+        const result =await ProductServiceV2.findOneProduct(req.params.productId);
 
         new SuccessResponse({
             message: 'Get one products successfully',
@@ -114,10 +125,28 @@ class ProductController {
 
     // UPDATE //
     updateProduct = async (req, res, next) => {
-        const result =await ProductServiceV2.updateProduct(req.body.product_type,req.params.productId,{...req.body,product_shop: req.user.userId});
+        const result =await ProductServiceV2.updateProduct(req.body.product_type,req.params.productId,{...req.body});
 
         new SuccessResponse({
             message: 'Update Product successfully',
+            metadata: result
+        }).send(res);
+    }
+
+    addCategoriesToProduct = async (req, res, next) => {
+        const result =await ProductServiceV2.addCategoriesToProduct(req.params.productId,req.body);
+
+        new SuccessResponse({
+            message: 'Add Category to Product successfully',
+            metadata: result
+        }).send(res);
+    }
+
+    removeCategoriesFromProduct = async (req, res, next) => {
+        const result =await ProductServiceV2.removeCategoriesFromProduct(req.params.productId,req.body);
+
+        new SuccessResponse({
+            message: 'Remove Category from Product successfully',
             metadata: result
         }).send(res);
     }

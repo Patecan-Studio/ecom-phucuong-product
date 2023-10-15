@@ -4,10 +4,10 @@ const router = express.Router();
 
 
 // [ MIDDLEWARE ] Check JWT in API header
-router.use(checkApiKey)
+//router.use(checkApiKey)
 
 // [ MIDDLEWARE ] Check Authorization
-router.use(checkPermission('0000'))
+//router.use(checkPermission('0000'))
 
 
 router.use('/v1/api/brand', require('./brand'))

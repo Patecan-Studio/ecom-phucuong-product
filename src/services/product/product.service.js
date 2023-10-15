@@ -1,4 +1,5 @@
 const {product, cloth, electronic} = require('../../models/product.model');
+const category = require('../../models/category.model');
 const {BadRequestError} = require("../../common/response/error.response");
 const {
     findAllDraftForShop,
@@ -10,8 +11,16 @@ const {
     searchProduct,
     repoUpdateProductById
 } = require("../../repositories/product.repository");
-const {removeInvalidValue, updateNestedObjectParser} = require("../../utils");
+const {
+    removeInvalidValue,
+    updateNestedObjectParser,
+    convertUnSelectToObject,
+    convertStringIdToObjectId
+} = require("../../utils");
 const {insertInventory} = require("../../repositories/inventory.repository");
+const CategoryRepository = require("../../repositories/category.repository");
+const categoryModel = require("../../models/category.model");
+const {Types} = require("mongoose");
 
 // Define Factory class
 class ProductFactory {
@@ -46,6 +55,43 @@ class ProductFactory {
 
     }
 
+    static async addCategoriesToProduct(productId, payload) {
+        const productClass = ProductFactory.productRegistry["general"];
+
+        return await new productClass(payload).addCategoriesToProduct(productId, payload);
+
+    }
+
+    static async removeCategoriesFromProduct(productId, payload) {
+        const productClass = ProductFactory.productRegistry["general"];
+
+        return await new productClass(payload).removeCategoriesFromProduct(productId, payload);
+
+    }
+
+
+    static async deleteProduct(productId) {
+
+        const result = await product.findById(productId);
+
+        console.log(productId)
+        console.log(result.product_categories);
+
+
+           // Remove product in category
+        await category.updateMany(
+            { category_products: productId },
+            { $pull: { category_products: productId } },
+        );
+
+        result.isMarkedDelete = true;
+        result.product_categories = [];
+        await result.save()
+
+
+        return result;
+
+    }
 
     // PUT //
     static async publishProductByShop({product_shop, product_id}) {
@@ -79,8 +125,15 @@ class ProductFactory {
         });
     }
 
-    static async findOneProduct(product_id) {
-        return await findOneProduct({product_id, unSelect: ['isDraft', 'isPublished', 'createdAt', 'updateAt', '__v']});
+    static async findOneProduct(productId) {
+
+
+        const foundProduct = await product
+            .findById(productId)
+            .select(convertUnSelectToObject(["__v"]))
+            .exec();
+
+        return foundProduct;
     }
 
     static async searchProducts({keySearch}) {
@@ -146,24 +199,167 @@ class Product {
 
     // UPDATE //
     async updateProduct(productId, updateBody) {
+        let result = null;
+        const foundProduct = await product.findById(productId).lean().exec();
         /**
          * {
          *      a:undefined,
          *      b:null
          * }
          **/
-        // 1. Remove attribute that is undefined
+            // 1. Remove attribute that is undefined
         const objectParams = removeInvalidValue(this)
         // 2. check xem update o cho nao
         if (objectParams.product_attributes) {
-            return await repoUpdateProductById({
-                productId,
-                updateBody: updateNestedObjectParser(objectParams.product_attributes),
-                model: product
+            // result = await repoUpdateProductById({
+            //     productId,
+            //     updateBody: updateNestedObjectParser(objectParams.product_attributes),
+            //     model: product
+            // })
+
+            result = await product.findByIdAndUpdate(productId, updateNestedObjectParser(objectParams.product_attributes), {
+                new: true,
             })
         }
 
-        return await repoUpdateProductById({productId, updateBody, model: product});
+        //result = await repoUpdateProductById({productId, updateBody, model: product});
+
+        result = await product.findByIdAndUpdate(productId, updateBody, {
+            new: true,
+        })
+
+        if (objectParams.product_categories) {
+            /**
+             * @Rule-1: Add product in category
+             */
+            category.bulkWrite(objectParams.product_categories.map((item) => ({ // remove product in category
+                updateOne: {
+                    filter: {_id: item._id},
+                    update: {
+                        $addToSet: {
+                            category_products: {
+                                _id: productId
+                            }
+                        }
+                    }
+                }
+            })));
+
+
+            /**
+             * @Rule-2: If foundProduct.product_categories contain item that objectParams.product_categories don't have
+             * ==> Category removed
+             */
+            const removedCategoryItems = foundProduct.product_categories.filter(category => {
+                return !objectParams.product_categories.some(paramCategory => paramCategory._id === category._id);
+            });
+
+            if (removedCategoryItems.length > 0) {
+                category.bulkWrite(removedCategoryItems.map((item) => ({ // remove product in category
+                    updateOne: {
+                        filter: {_id: item._id},
+                        update: {
+                            $pull: {
+                                category_products: {
+                                    _id: productId
+                                }
+                            }
+                        }
+                    }
+                })));
+            }
+
+
+        }
+
+        return result;
+
+    }
+
+
+    async addCategoriesToProduct(productId, payload) {
+
+        const objectParams = removeInvalidValue(payload)
+
+        console.log(payload)
+
+        const result = await product.findByIdAndUpdate(
+            productId,
+            {
+                $addToSet: {
+                    product_categories: {
+                        $each: objectParams
+                    }
+                }
+            },
+            {new: true},
+        );
+
+
+        const bulkOperations = payload.map((category) => ({
+            updateOne: {
+                filter: {_id: category._id},
+                update: {
+                    $addToSet: {
+                        category_products:
+                            convertStringIdToObjectId(productId)
+                        ,
+                    },
+                },
+            },
+        }));
+
+        category.bulkWrite(bulkOperations)
+            .then((bulkWriteResult) => {
+                console.log('Add category in products success:', bulkWriteResult);
+            })
+            .catch((error) => {
+                console.error('Error adding category in products:', error);
+            });
+
+
+        return result;
+    }
+
+    async removeCategoriesFromProduct(productId, payload) {
+
+        const objectParams = removeInvalidValue(payload)
+
+
+        const result = await product.findByIdAndUpdate(
+            productId,
+            {
+                $pull: {
+                    product_categories: {
+                        _id: {$in: objectParams}
+                    }
+                }
+            },
+            {new: true},
+        );
+
+
+        const bulkOperations = payload.map((categoryId) => ({
+            updateOne: {
+                filter: {_id: categoryId},
+                update: {
+                    $pull: {
+                        category_products: convertStringIdToObjectId(productId)
+                    },
+                },
+            },
+        }));
+
+        category.bulkWrite(bulkOperations)
+            .then((bulkWriteResult) => {
+                console.log('Add category in products success:', bulkWriteResult);
+            })
+            .catch((error) => {
+                console.error('Error adding category in products:', error);
+            });
+
+
+        return result;
     }
 
 }

@@ -142,6 +142,7 @@ productSchema.pre('save', async function (next) {
     for (let i = 0; i < this.product_categories.length; i++) {
         const category = this.product_categories[i];
 
+
         if (category._id && (!category.category_logoUrl || !category.category_name)) {
             const {_id, category_name, category_logoUrl} = await CategoryService.findOneCategoryById(category._id);
             this.product_categories[i] = {_id, category_name, category_logoUrl};

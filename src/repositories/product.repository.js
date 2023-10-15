@@ -1,4 +1,4 @@
-const {product, electronic, cloth} = require('../models/product.model');
+const {product, cloth, electronic} = require('../models/product.model');
 const {populate} = require("dotenv");
 const {Types} = require("mongoose");
 const keyTokenModel = require("../models/keyStore.model");
@@ -29,10 +29,12 @@ const findAllProducts = async ({limit, sort,page, filter, select }) => {
     return products;
 }
 
-const findOneProduct = async ({product_id, unSelect}) => {
+const findOneProduct = async ({productId, unSelect}) => {
+
+
 
     const foundProduct = await product
-        .findById(product_id)
+        .findById(productId)
         .select(convertUnSelectToObject(unSelect))
         .exec();
 
@@ -105,11 +107,13 @@ const unPublishProductByShop = async ({product_shop, product_id}) => {
 }
 
 const repoUpdateProductById = async ({productId, updateBody, model, isNew = true}) => {
-    console.log("#2 "+productId);
+
 
     return await model.findByIdAndUpdate(productId, updateBody, {
         new: isNew,
     });
+
+
 }
 
 
